@@ -3,6 +3,7 @@ import Button from "../../components/Button"
 // import Input from "../../components/Input"
 import InputSignIn from "../../components/Input/InputSignIn"
 import { useNavigate } from 'react-router-dom'
+import { config } from "../../config"
 
 const Form = ({ isSignInPage = false }) => {
   const [data, setData] = useState(() => ({
@@ -16,7 +17,7 @@ const Form = ({ isSignInPage = false }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const res = await fetch(`http://localhost:8000/api/${isSignInPage ? 'login' : 'register'}`, {
+      const res = await fetch(`${config.serverURL}/api/${isSignInPage ? 'login' : 'register'}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

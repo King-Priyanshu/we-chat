@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react"
 import MessageBox from "../MessageBox";
 import MessageBox2 from './MessageBox2';
 import { WelcomePane } from "./WelcomePane";
+import { socket } from "../../../sio";
 
 export function ChatPane({ activeContactData, messages, setMessages }) {
 
@@ -45,6 +46,8 @@ export function ChatPane({ activeContactData, messages, setMessages }) {
       })
 
 
+      const theMessage = {message: messageText, timestamp: messageObj.timestamp, id: messageObj.id}
+      socket.emit('sendMessage', {messageObj: theMessage, receiverId: activeContactData.id})
       setMessageText('');
     }
   }

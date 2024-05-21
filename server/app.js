@@ -8,10 +8,29 @@ const Conversation = require('./models/conversation.js');
 const Messages = require('./models/Messages.js');
 const verifyToken = require('./middlewares/verifyToken.js');
 const dbConnect = require('./db/connection.js');
+const http = require('http');
+const { Server: SocketIo } = require('socket.io');
+const config = require('./config.js')
+
+
+const initSockets = require('./sockets/initSockets.js')
+
+const dotenv = require('dotenv')
+
+dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 8000;
 const jwtSecretKey = process.env.JWT_SECRET_KEY || 'your_secret_key'; // Replace with a strong secret key
+
+
+const server = http.createServer(app);
+
+const io = new SocketIo(server, {
+    cors: config.clientURL
+});
+
+initSockets(io);
 
 // Database Connection
 dbConnect();
@@ -112,7 +131,7 @@ app.get('/api/conversations/:userId', async (req, res) => {
     const userId = req.params.userId;
     const conversations = await Conversation.find({ members: userId });
 
-    console.log(conversations)
+    // console.log(conversations)
     // Return necessary conversation data
     res.status(200).json(conversations);
   } catch (error) {
@@ -176,7 +195,7 @@ app.get('/api/users', async (req, res) => {
       userId: user._id
     }));
 
-    console.log(usersData)
+    // console.log(usersData)
     res.status(200).json(usersData);
   } catch (error) {
     console.error('Error retrieving users:', error);
@@ -206,6 +225,6 @@ app.post('/api/getUserData', verifyToken, async (req, res) => {
 });
 
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log('Server is running on port ' + port);
 });

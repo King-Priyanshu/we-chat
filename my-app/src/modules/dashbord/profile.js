@@ -9,6 +9,9 @@ import Input from '../../components/Input'
 import { useNavigate } from 'react-router-dom'
 import { ContactCard } from './components/ContactCard'
 import { ChatPane } from './components/ChatPane'
+import { config } from '../../config'
+
+import { socket, initSocketIo } from '../../sio'
 
 const Dashboard = () => {
   const [userData, setUserData] = useState({ username: null, email: null })
@@ -16,14 +19,55 @@ const Dashboard = () => {
 
   const [activeContactData, setActiveContactData] = useState({});
 
+  const [token, setToken] = useState(localStorage.getItem('user:token'));
+
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (socket ? !socket.connected : true) {
+      const token = localStorage.getItem('user:token');
+      initSocketIo(token);
+    }
+  }, [socket, token]);
 
   const [messages, setMessages] = useState({
     '663bc3089f4189f14f6453c3': [
-      {id: 1, text: 'hi', isMyMessage: false, timestamp: new Date()},
-      {id: 2, text: 'hello', isMyMessage: true, timestamp: new Date()}
+      { id: 1, text: 'hi', isMyMessage: false, timestamp: new Date() },
+      { id: 2, text: 'hello', isMyMessage: true, timestamp: new Date() }
     ]
   })
+
+  useEffect(() => {
+    socket.on('receiveMessage', (data) => {
+      console.log(data)
+      let latestMessageId = 0;
+      console.log(messages)
+      if (messages[data.senderId]) {
+        latestMessageId = messages[data.senderId][messages[data.senderId].length - 1].id;
+      }
+      const messageObj = { text: data.message, isMyMessage: data.isMyMessage, id: latestMessageId + 1, timestamp: data.timestamp }
+      setMessages((prevMessages) => {
+        let prevConversation = [];
+        if (prevMessages[data.senderId]) {
+          prevConversation = prevMessages[data.senderId];
+        }
+        const newConversation = { [data.senderId]: [...prevConversation, messageObj] };
+        return {
+          ...prevMessages,
+          ...newConversation
+        }
+      })
+    });
+
+    return () => {
+      socket.off('receiveMessage');
+    }
+
+  }, [messages])
+
+  useEffect(() => {
+    console.log(messages)
+  }, [messages])
 
 
   const contects = [
@@ -71,7 +115,7 @@ const Dashboard = () => {
     const fetchConversation = async () => {
       if (loggedInUser) {
         try {
-          const res = await fetch(`http://localhost:8000/api/users`, {
+          const res = await fetch(`${config.serverURL}/api/users`, {
             method: 'GET',
             headers: {
               'content-type': 'application/json',
@@ -92,7 +136,7 @@ const Dashboard = () => {
     async function getUserData() {
       try {
         const token = localStorage.getItem('user:token');
-        const res = await fetch(`http://localhost:8000/api/getUserData`, {
+        const res = await fetch(`${config.serverURL}/api/getUserData`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -125,7 +169,8 @@ const Dashboard = () => {
     setActiveContactData({ id: user.id, fullName: user.fullName, email: user.email });
   }
 
-  function handleLogoutClick(){
+  function handleLogoutClick() {
+    setToken(null);
     localStorage.removeItem('user:token');
     navigate('/user/sign_in');
   }
@@ -141,19 +186,19 @@ const Dashboard = () => {
   return (
     <div className='w-screen flex'>
       <div className='w-[25%] h-screen overflow-scroll'>
-        
+
         <div className='flex items-center my-8 mx-14'>
-          
+
           <div className='border border-primary p-[2px] rounded-full'>
             <img src={Avatar} width={100} height={100} alt='Avatar' />
           </div>
-          
+
           <div className='ml-4'>
             <h3 className='text-2xl'>{userData ? userData.username : 'loading...'}</h3>
             <p className='text-lg font-light'>My Account</p>
             <div className='bg-mymessage flex justify-center items-center h-8 text-white cursor-pointer border border-message' onClick={handleLogoutClick}>
               Logout
-          </div>
+            </div>
           </div>
         </div>
         <hr />

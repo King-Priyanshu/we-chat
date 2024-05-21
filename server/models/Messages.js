@@ -1,14 +1,16 @@
 const mongoose = require('mongoose');
 
 const messageSchema = mongoose.Schema({
-    //    fill hall ek ko
     conversationId: {
-        type: String,
-        required: true
+        type: String
     },
     senderId: {
-        type: String,
-        required: true
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+    receiverId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     },
     message: {
         type: String,
