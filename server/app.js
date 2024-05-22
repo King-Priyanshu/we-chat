@@ -27,7 +27,7 @@ const jwtSecretKey = process.env.JWT_SECRET_KEY || 'your_secret_key'; // Replace
 const server = http.createServer(app);
 
 const io = new SocketIo(server, {
-    cors: config.clientURL
+  cors: config.clientURL
 });
 
 initSockets(io);
@@ -191,7 +191,7 @@ app.get('/api/users', async (req, res) => {
   try {
     const users = await User.find();
     const usersData = users.map(user => ({
-      user: { email: user.email, fullName: user.username, id: user._id },
+      user: { email: user.email, fullName: user.username, id: user._id, pfp: user.pfp },
       userId: user._id
     }));
 
@@ -202,6 +202,26 @@ app.get('/api/users', async (req, res) => {
     res.status(500).json({ error: 'An error occurred while retrieving users' });
   }
 });
+
+
+app.post('/api/updatepfp', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+
+    const body = req.body;
+    
+    user.pfp = body.pfp;
+    await user.save();
+
+    console.log('hii')
+
+    res.status(200).json({message: 'Done'});
+  } catch (error) {
+    console.error('Error retrieving users:', error);
+    res.status(500).json({ error: 'An error occurred while retrieving users' });
+  }
+});
+
 
 app.post('/api/getUserData', verifyToken, async (req, res) => {
   try {
@@ -215,7 +235,8 @@ app.post('/api/getUserData', verifyToken, async (req, res) => {
     const userData = {
       userId: user._id,
       username: user.username,
-      email: user.email
+      email: user.email,
+      pfp: user.pfp
     };
     res.status(200).json({ userData });
   } catch (error) {
@@ -223,6 +244,87 @@ app.post('/api/getUserData', verifyToken, async (req, res) => {
     res.status(500).json({ error: 'An error occurred while retrieving user data' });
   }
 });
+
+
+
+app.post('/api/getMessages', verifyToken, async (req, res) => {
+  try {
+      // console.log(req.userId)
+      const user = await User.findById(req.userId);
+
+      // let messages = await Message.find({$or: [
+      //     {sender: user._id},
+      //     {receiver: user._id}
+      // ]});
+
+      let messages = await Messages.aggregate([
+          {
+              "$match": {
+                  $or: [{ senderId: user._id }, { receiverId: user._id }]
+              }
+          },
+          {
+              $sort: {
+                  sendingDatetime: -1
+              }
+          },
+          {
+              $group: {
+                  '_id': {
+                      $cond: {
+                          if: { $eq: ["$senderId", new mongoose.Types.ObjectId(user._id)] },
+                          then: "$receiverId",
+                          else: "$senderId"
+                      }
+                  },
+                  messages: {
+                      $push: '$$ROOT'
+                  }
+              }
+          },
+          {
+              $project: {
+                  '_id': 0,
+                  messages: '$messages' 
+                  // messages: '$messages'
+              }
+          },
+          {
+              $unwind: '$messages'
+          },
+          {
+              $replaceRoot: { newRoot: '$messages' }
+          },
+          {
+              $sort: {
+                  sendingDatetime: 1
+              }
+          }
+      ]);
+
+
+      messages = messages.map((message, index) => {
+          return {
+              // ...message._doc,
+              ...message,
+              isMyMessage: message.senderId.toHexString() === user._id.toHexString()
+          }
+      });
+
+      // console.log(messages);
+
+      return res.status(200).json({
+          messages: messages
+      });
+  }
+  catch (e) {
+      console.log(e)
+      return res.status(500).json({
+          message: "Internal server error"
+      });
+  }
+});
+
 
 
 server.listen(port, () => {

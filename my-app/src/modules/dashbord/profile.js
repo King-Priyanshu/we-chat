@@ -12,6 +12,7 @@ import { ChatPane } from './components/ChatPane'
 import { config } from '../../config'
 
 import { socket, initSocketIo } from '../../sio'
+import ProfilePfp from './components/ProfilePfp'
 
 const Dashboard = () => {
   const [userData, setUserData] = useState({ username: null, email: null })
@@ -21,7 +22,10 @@ const Dashboard = () => {
 
   const [token, setToken] = useState(localStorage.getItem('user:token'));
 
+  const [pfp, setPfp] = useState(Avatar);
+
   const navigate = useNavigate()
+
 
   useEffect(() => {
     if (socket ? !socket.connected : true) {
@@ -115,10 +119,12 @@ const Dashboard = () => {
     const fetchConversation = async () => {
       if (loggedInUser) {
         try {
+          const token = localStorage.getItem('user:token');
           const res = await fetch(`${config.serverURL}/api/users`, {
             method: 'GET',
             headers: {
               'content-type': 'application/json',
+              'Authorization': token
             }
           });
           const resData = await res.json()
@@ -147,6 +153,60 @@ const Dashboard = () => {
         const data = await res.json();
         if (res.ok) {
           setUserData(data.userData);
+          setPfp(data.userData.pfp ? data.userData.pfp : Avatar);
+        }
+      } catch (e) {
+        console.error('Error fetching user data:', e);
+      }
+    }
+
+    async function getMessages() {
+      try {
+        const token = localStorage.getItem('user:token');
+        const res = await fetch(`${config.serverURL}/api/getMessages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token
+          }
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+
+          let messagesData = {};
+          data.messages.forEach(message => {
+
+            let latestMessageId = 0;
+            if (messagesData[message.isMyMessage ? message.receiverId : message.senderId]) {
+              const messageIds = Object.keys(messagesData[message.isMyMessage ? message.receiverId : message.senderId]);
+              latestMessageId = messageIds[messageIds.length - 1]
+            }
+            const messageID = parseInt(latestMessageId) + 1;
+
+            messagesData = {
+              ...messagesData,
+              [message.isMyMessage ? message.receiverId : message.senderId]: [
+                ...messagesData[message.isMyMessage ? message.receiverId : message.senderId],
+                {
+                  'messageId': message._id,
+                  text: message.message,
+
+                  timestamp: new Date(message.timestamp),
+
+                  isMyMessage: message.isMyMessage,
+
+                  id: messageID
+                }
+
+              ]
+            }
+          });
+
+
+          console.log(messagesData)
+          // setMessages(messagesData)
+          // here
         }
       } catch (e) {
         console.error('Error fetching user data:', e);
@@ -158,6 +218,7 @@ const Dashboard = () => {
     }
 
     getUserData();
+    getMessages();
 
 
 
@@ -166,7 +227,7 @@ const Dashboard = () => {
 
   function handleContactClick(user) {
     // console.log(user)
-    setActiveContactData({ id: user.id, fullName: user.fullName, email: user.email });
+    setActiveContactData({ id: user.id, fullName: user.fullName, email: user.email, pfp: user.pfp });
   }
 
   function handleLogoutClick() {
@@ -190,7 +251,7 @@ const Dashboard = () => {
         <div className='flex items-center my-8 mx-14'>
 
           <div className='border border-primary p-[2px] rounded-full'>
-            <img src={Avatar} width={100} height={100} alt='Avatar' />
+            <ProfilePfp image={pfp} setPfp={setPfp} />
           </div>
 
           <div className='ml-4'>
@@ -221,10 +282,6 @@ const Dashboard = () => {
       </div>
 
       <ChatPane activeContactData={activeContactData} messages={messages} setMessages={setMessages} />
-
-      <div className='w-[25%] h-screen'>
-        hlo
-      </div>
     </div>
   )
 }

@@ -6,6 +6,8 @@ import MessageBox from "../MessageBox";
 import MessageBox2 from './MessageBox2';
 import { WelcomePane } from "./WelcomePane";
 import { socket } from "../../../sio";
+import Avatar from '../../../assets/Avatar.svg'
+
 
 export function ChatPane({ activeContactData, messages, setMessages }) {
 
@@ -69,14 +71,14 @@ export function ChatPane({ activeContactData, messages, setMessages }) {
   }
 
   return (
-    <div className='w-[50%] h-screen bg-white flex flex-col items-center shadow-lg'>
+    <div className='w-[75%] h-screen bg-white flex flex-col items-center shadow-lg'>
 
       {
         activeContactData.id ?
           (
             <>
               <div className='w-[75%] bg-ternary h-[60px] mt-14 rounded-full flex items-center'>
-                <div className='cursor-pointer'><img src={maixit} width={60} height={60} alt='maixit' /></div>
+                <div className='cursor-pointer'><img src={activeContactData.pfp?activeContactData.pfp:Avatar} width={60} height={60} className="rounded-full" alt='maixit' /></div>
                 <div className='ml-3 mr-auto'>
                   <h3 className='text-3xl semi-bold'>{activeContactData.fullName}</h3>
                   <h5 className='font-light text-sm'>Online</h5>

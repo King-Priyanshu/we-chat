@@ -1,3 +1,5 @@
+import Resizer from "react-image-file-resizer";
+
 export function getDatetimeString(date){
     if (date) {
         const messageDatetime = new Date(date);
@@ -30,3 +32,20 @@ export function getDatetimeString(date){
 
     return "fetching...";
 }
+
+
+export const resizeFile = (file) =>
+    new Promise((resolve) => {
+        Resizer.imageFileResizer(
+            file,
+            200,
+            200,
+            "JPEG",
+            100,
+            0,
+            (uri) => {
+                resolve(uri);
+            },
+            "base64", 200, 200
+        );
+    });
