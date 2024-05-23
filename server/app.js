@@ -191,7 +191,7 @@ app.get('/api/users', async (req, res) => {
   try {
     const users = await User.find();
     const usersData = users.map(user => ({
-      user: { email: user.email, fullName: user.username, id: user._id, pfp: user.pfp },
+      user: { email: user.email, fullName: user.username, id: user._id, pfp: user.pfp, status: user.status },
       userId: user._id
     }));
 

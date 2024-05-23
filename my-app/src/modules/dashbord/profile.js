@@ -42,6 +42,32 @@ const Dashboard = () => {
   })
 
   useEffect(() => {
+
+    socket.on('connect', (data)=>{
+      socket.emit('userOnline', {});
+    });
+
+    socket.on('onlineStatusChange', (data)=>{
+
+      const newConversation = conversation.map((conv=>{
+        if(conv.userId===data.userId){
+          return {user: {...conv.user, status: data.status}, userId: conv.userId}
+        }
+        return {...conv}
+      }));
+
+      if(activeContactData!=null || activeContactData!={}){
+        if(data.userId===activeContactData.id){
+          setActiveContactData({ ...activeContactData, status: data.status });
+        }
+      }
+
+      setConversation(newConversation);
+
+      console.log(newConversation)
+    });
+
+
     socket.on('receiveMessage', (data) => {
       console.log(data)
       let latestMessageId = 0;
@@ -65,9 +91,10 @@ const Dashboard = () => {
 
     return () => {
       socket.off('receiveMessage');
+      socket.off('onlineStatusChange');
     }
 
-  }, [messages])
+  }, [messages, conversation, activeContactData])
 
   useEffect(() => {
     console.log(messages)
@@ -218,7 +245,7 @@ const Dashboard = () => {
     }
 
     getUserData();
-    getMessages();
+    // getMessages();
 
 
 
@@ -227,8 +254,9 @@ const Dashboard = () => {
 
   function handleContactClick(user) {
     // console.log(user)
-    setActiveContactData({ id: user.id, fullName: user.fullName, email: user.email, pfp: user.pfp });
+    setActiveContactData({ id: user.id, fullName: user.fullName, email: user.email, pfp: user.pfp, status: user.status });
   }
+
 
   function handleLogoutClick() {
     setToken(null);

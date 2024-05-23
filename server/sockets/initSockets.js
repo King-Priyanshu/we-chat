@@ -5,8 +5,6 @@ const Messages = require('../models/Messages.js');
 function initSockets(io) {
     io.use(sioVerifyToken).on('connection', (socket) => {
 
-        console.log(socket.id)
-
         socket.on('sendMessage', async (data) => {
             try {
                 const user = await User.findById(socket.id);
@@ -39,7 +37,30 @@ function initSockets(io) {
             catch (e) {
                 socket.emit('sendMessageError', { message: 'Internal server error' });
             }
-        })
+        });
+
+
+
+        socket.on('userOnline', async (data)=>{
+            const user = await User.findById(socket.id);
+            user.status = 'Online';
+            await user.save();
+
+            socket.broadcast.emit('onlineStatusChange', {userId: socket.id, status: 'Online'});
+        });
+
+        socket.on('disconnect', async () => {
+            try {
+                const user = await User.findById(socket.id);
+                user.status = 'Offline';
+                await user.save();
+
+                socket.broadcast.emit('onlineStatusChange', {userId: socket.id, status: 'Offline'});
+            }
+            catch (e) {
+                socket.emit('sendMessageError', { message: 'Internal server error' });
+            }
+        });
 
     })
 }

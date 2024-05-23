@@ -81,7 +81,7 @@ export function ChatPane({ activeContactData, messages, setMessages }) {
                 <div className='cursor-pointer'><img src={activeContactData.pfp?activeContactData.pfp:Avatar} width={60} height={60} className="rounded-full" alt='maixit' /></div>
                 <div className='ml-3 mr-auto'>
                   <h3 className='text-3xl semi-bold'>{activeContactData.fullName}</h3>
-                  <h5 className='font-light text-sm'>Online</h5>
+                  <h5 className='font-light text-sm'>{activeContactData.status}</h5>
                 </div>
 
                 <div className='cursor-pointer p-4'>
